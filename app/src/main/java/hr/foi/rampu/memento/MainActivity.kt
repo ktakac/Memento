@@ -12,10 +12,12 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import hr.foi.rampu.memento.adapters.MainPagerAdapter
 import hr.foi.rampu.memento.adapters.MainPagerAdapter.FragmentItem
+import hr.foi.rampu.memento.database.TasksDatabase
 import hr.foi.rampu.memento.entities.Task
 import hr.foi.rampu.memento.fragments.CompletedFragment
 import hr.foi.rampu.memento.fragments.NewsFragment
 import hr.foi.rampu.memento.fragments.PendingFragment
+import hr.foi.rampu.memento.helpers.MockDataLoader
 
 class MainActivity : AppCompatActivity() {
 
@@ -89,6 +91,9 @@ class MainActivity : AppCompatActivity() {
                 navView.menu.getItem(position).isChecked = true
             }
         })
+
+        TasksDatabase.buildInstance(applicationContext)
+        MockDataLoader.loadMockData()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())

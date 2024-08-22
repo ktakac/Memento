@@ -5,7 +5,11 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import hr.foi.rampu.memento.R
+import hr.foi.rampu.memento.adapters.TasksAdapter
+import hr.foi.rampu.memento.database.TasksDatabase
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -21,6 +25,8 @@ class CompletedFragment : Fragment() {
     // TODO: Rename and change types of parameters
     private var param1: String? = null
     private var param2: String? = null
+    private lateinit var recyclerView: RecyclerView
+    private val tasksDAO = TasksDatabase.getInstance().getTasksDao()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,5 +62,18 @@ class CompletedFragment : Fragment() {
                     putString(ARG_PARAM2, param2)
                 }
             }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        recyclerView = view.findViewById(R.id.rv_completed_tasks)
+        val completedTasks = tasksDAO.getAllTasks(true)
+        recyclerView.adapter = TasksAdapter(completedTasks.toMutableList())
+        recyclerView.layoutManager = LinearLayoutManager(view.context)
+
+        parentFragmentManager.setFragmentResultListener("task_completed", viewLifecycleOwner) {_,bundle ->
+            val addedTaskId = bundle.getInt("task_id")
+            val tasksAdapter = recyclerView.adapter as TasksAdapter
+            tasksAdapter.addTask(tasksDAO.getTask(addedTaskId))
+        }
     }
 }
