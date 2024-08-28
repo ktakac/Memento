@@ -1,18 +1,22 @@
 package hr.foi.rampu.memento.adapters
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.text.Layout
 import android.view.LayoutInflater
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.graphics.toColorInt
 import androidx.recyclerview.widget.RecyclerView
 import hr.foi.rampu.memento.R
 import hr.foi.rampu.memento.database.TasksDatabase
 import hr.foi.rampu.memento.entities.Task
+import hr.foi.rampu.memento.services.TaskTimerService
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 class TasksAdapter(
@@ -27,11 +31,37 @@ class TasksAdapter(
         private val taskName: TextView
         private val taskDueDate: TextView
         private val taskCategoryColor: SurfaceView
+        private val taskTimer: ImageView
+        private var isTimerActive = false
 
         init {
             taskName = view.findViewById(R.id.tv_task_name)
             taskDueDate = view.findViewById(R.id.tv_task_due_date)
             taskCategoryColor = view.findViewById(R.id.sv_task_category_color)
+            taskTimer = view.findViewById(R.id.iv_task_timer)
+
+            view.setOnClickListener {
+                if (Date() < tasksList[adapterPosition].dueDate) {
+                    val intent = Intent(view.context, TaskTimerService::class.java).apply {
+                        putExtra("task_id", tasksList[adapterPosition].id)
+                    }
+
+                    isTimerActive = !isTimerActive
+
+                    if (isTimerActive) {
+                        taskTimer.visibility = View.VISIBLE
+                    } else {
+                        intent.putExtra("cancel", true)
+                        taskTimer.visibility = View.GONE
+                    }
+
+                    view.context.startService(intent)
+
+                } else if (taskTimer.visibility == View.VISIBLE) {
+                    taskTimer.visibility = View.GONE
+                }
+
+            }
 
             view.setOnLongClickListener{
                 val currentTask = tasksList[adapterPosition]
@@ -98,5 +128,13 @@ class TasksAdapter(
         notifyItemInserted(newIndexInList)
     }
 
-
+    fun removeTaskById(taskId: Int) {
+        val deletedIndex = tasksList.indexOfFirst { task ->
+            task.id == taskId
+        }
+        if (deletedIndex != -1) {
+            tasksList.removeAt(deletedIndex)
+            notifyItemRemoved(deletedIndex)
+        }
+    }
 }

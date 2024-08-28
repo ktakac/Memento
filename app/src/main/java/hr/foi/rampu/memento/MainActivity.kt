@@ -1,8 +1,16 @@
 package hr.foi.rampu.memento
 
+import android.app.AlarmManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.os.bundleOf
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -18,6 +26,8 @@ import hr.foi.rampu.memento.fragments.CompletedFragment
 import hr.foi.rampu.memento.fragments.NewsFragment
 import hr.foi.rampu.memento.fragments.PendingFragment
 import hr.foi.rampu.memento.helpers.MockDataLoader
+import hr.foi.rampu.memento.helpers.TaskDeletionServiceHelper
+import hr.foi.rampu.memento.services.TaskDeletionService
 
 class MainActivity : AppCompatActivity() {
 
@@ -25,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var viewPager2: ViewPager2
     lateinit var navDrawerLayout: DrawerLayout
     lateinit var navView: NavigationView
+    private val taskDeletionServiceHelper by lazy { TaskDeletionServiceHelper(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,10 +106,41 @@ class MainActivity : AppCompatActivity() {
         TasksDatabase.buildInstance(applicationContext)
         MockDataLoader.loadMockData()
 
+        val channel = NotificationChannel("task-timer", "Task Timer Channel",
+            NotificationManager.IMPORTANCE_HIGH)
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+        activateTaskDeletionService()
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+    }
+
+    private fun activateTaskDeletionService() {
+        taskDeletionServiceHelper.activateTaskDeletionService {  deletedTaskId ->
+            supportFragmentManager.setFragmentResult(
+                "task_deleted",
+                        bundleOf("task_id" to deletedTaskId)
+            )
+        }
+        /*
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, TaskDeletionService::class.java)
+        val pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        alarmManager.setRepeating(
+            AlarmManager.ELAPSED_REALTIME,
+            SystemClock.elapsedRealtime() + 2 * 60 * 1000,
+            2 * 60 * 1000,
+            pendingIntent
+        )*/
+    }
+
+    override fun onDestroy() {
+        taskDeletionServiceHelper.deactivateTaskDeletionService()
+        super.onDestroy()
     }
 }
