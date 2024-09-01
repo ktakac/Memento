@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Memento"
 include(":app")
+include(":wearable")
